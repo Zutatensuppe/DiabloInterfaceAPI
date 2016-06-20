@@ -1,0 +1,11 @@
+﻿# Ignore binaries and build files.
+/bin
+/obj
+/.vs
+
+*.csproj.user
+
+# Recommended ignores for Visual Studio NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
