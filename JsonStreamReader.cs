@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DiabloInterfaceAPI
 {
@@ -25,6 +27,23 @@ namespace DiabloInterfaceAPI
             return encoding.GetString(buffer);
         }
 
+        async Task<string> ReadJsonStringAsync()
+        {
+            // Get string length.
+            byte[] buffer = new byte[4];
+            int read = await reader.BaseStream.ReadAsync(buffer, 0, 4);
+            if (read != 4) return null;
+            int length = BitConverter.ToInt32(buffer, 0);
+
+            // Read string bytes.
+            buffer = new byte[length];
+            read = await reader.BaseStream.ReadAsync(buffer, 0, length);
+            if (read != length) return null;
+
+            // Convert to correct encoding.
+            return encoding.GetString(buffer);
+        }
+
         public object ReadJson()
         {
             string jsonData = ReadJsonString();
@@ -35,6 +54,13 @@ namespace DiabloInterfaceAPI
         public T ReadJson<T>() where T : class
         {
             string jsonData = ReadJsonString();
+            if (jsonData == null) return null;
+            return JsonConvert.DeserializeObject<T>(jsonData);
+        }
+
+        public async Task<T> ReadJsonAsync<T>() where T : class
+        {
+            string jsonData = await ReadJsonStringAsync();
             if (jsonData == null) return null;
             return JsonConvert.DeserializeObject<T>(jsonData);
         }

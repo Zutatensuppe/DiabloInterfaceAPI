@@ -3,12 +3,18 @@ using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DiabloInterfaceAPI
 {
     public class DiabloInterfaceConnection : IDisposable
     {
         NamedPipeClientStream client;
+
+        /// <summary>
+        /// String encoding used by the connection.
+        /// </summary>
+        public Encoding Encoding { get; } = Encoding.UTF8;
 
         /// <summary>
         /// Creates a new connection to the pipe server with a default timeout of 5 seconds.
@@ -83,14 +89,39 @@ namespace DiabloInterfaceAPI
         {
             try
             {
-                var writer = new JsonStreamWriter(client, Encoding.UTF8);
+                var writer = new JsonStreamWriter(client, Encoding);
                 writer.WriteJson(request);
                 writer.Flush();
 
                 client.WaitForPipeDrain();
 
-                var reader = new JsonStreamReader(client, Encoding.UTF8);
+                var reader = new JsonStreamReader(client, Encoding);
                 var response = reader.ReadJson<ItemResponse>();
+
+                return response;
+            }
+            catch (EndOfStreamException)
+            {
+                return null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        public async Task<ItemResponse> RequestAsync(ItemRequest request)
+        {
+            try
+            {
+                var writer = new JsonStreamWriter(client, Encoding);
+                await writer.WriteJsonAsync(request);
+                await writer.FlushAsync();
+
+                client.WaitForPipeDrain();
+
+                var reader = new JsonStreamReader(client, Encoding);
+                var response = await reader.ReadJsonAsync<ItemResponse>();
 
                 return response;
             }
